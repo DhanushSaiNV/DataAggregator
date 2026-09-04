@@ -29,4 +29,25 @@ class CountryModel(BaseModel):
 class RawCountriesResponse(BaseModel, ResponseModel):
     countries: list[CountryModel]
     count: int
-    
+
+
+class MarketDataModel(BaseModel):
+    current_price: dict[str, int | float]
+    high_24h: dict[str, int | float]
+    low_24h: dict[str, int | float]
+    price_change_24h: float
+    price_change_percentage_24h: float
+    price_change_percentage_7d: float
+    price_change_percentage_30d: float
+    price_change_percentage_200d: float
+    price_change_percentage_1y: float
+
+
+class RawCoinResponse(BaseModel, ResponseModel):
+    id: str
+    symbol: str
+    name: str
+    categories: list[str]
+    # description: dict[str, str]
+    # genesis_date: str
+    market_data: MarketDataModel
