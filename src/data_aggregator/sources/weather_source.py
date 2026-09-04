@@ -3,7 +3,8 @@ from typing import Self
 import openmeteo_requests
 from pydantic import ValidationError
 
-from data_aggregator.domain.models import RawWeatherResponse, ResponseModel
+from data_aggregator.domain.exceptions import *
+from data_aggregator.domain.models import RawWeatherResponse
 from data_aggregator.sources.data_source import DataSource
 
 BASE_URL = "https://api.open-meteo.com/v1/forecast"
@@ -42,14 +43,20 @@ class WeatherSource(DataSource):
             "rain": current.Variables(3).Value(),
         }
 
-        self.response_dict = response_dict
+        self.response_dict: dict = response_dict
 
         return self
 
 
     def parse(self, response_dict: dict | None = None) -> RawWeatherResponse:
         """Parses raw response dict and returns RawWeatherResponse"""
-        response = RawWeatherResponse.model_validate(response_dict if response_dict else self.response_dict)
+        try:
+            response: RawWeatherResponse = RawWeatherResponse.model_validate(response_dict if response_dict else self.response_dict)
 
-        return response
+            return response
+        
+        except ValidationError:
+            raise ResponseValidationError(response_dict, RawWeatherResponse)
+        
+        
 
