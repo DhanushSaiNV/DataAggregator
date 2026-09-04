@@ -7,7 +7,7 @@ from data_aggregator.sources.weather_source import RawWeatherResponse
 
 class DataSource(ABC):
     def __init__(
-        self, base_url: str, endpoints: list[str]
+        self, base_url: str, endpoints: list[str] | None
     ) -> None:
         self.base_url = base_url
         self.endpoints = endpoints

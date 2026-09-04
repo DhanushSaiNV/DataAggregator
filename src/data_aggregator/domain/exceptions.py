@@ -34,6 +34,7 @@ class ResponseValidationError(DataFetchError):
     ) -> None:
         self.response_dict = response_dict
         self.response_model = response_model
+        self.argslist = args
 
         dict_msg = (
             str(response_dict)
@@ -47,7 +48,9 @@ class ResponseValidationError(DataFetchError):
             else "Response model not passed."
         )
 
-        message = f"Validation error: {dict_msg}\nExpected model: {model_msg}"
+        args_str = " ".join(str(arg) for arg in args) if args else ""
+        
+        message = f"Validation error: {dict_msg}\nExpected model: {model_msg}\n{args_str}".strip()
 
         super().__init__(message, *args)
 

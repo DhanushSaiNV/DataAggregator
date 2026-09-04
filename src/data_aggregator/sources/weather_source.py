@@ -20,11 +20,10 @@ DEFAULT_PARAMS = {
 
 class WeatherSource(DataSource):
     def __init__(
-        self, base_url: str = BASE_URL, endpoints: list[str] = []
+        self, base_url: str = BASE_URL, endpoints: list[str] | None = None
     ) -> None:
         super().__init__(base_url, endpoints)
         self.openmeteo = openmeteo_requests.Client()
-        
 
 
     def fetch(self, endpoint: str | None = None, *kwargs) -> Self:
@@ -38,7 +37,7 @@ class WeatherSource(DataSource):
             "timezone_b": response.Timezone(),
             "time": current.Time(),
             "temperature_2m": current.Variables(0).Value(),
-            "relative_humidity_2m": current.Variables(1).Value(),
+            "relative_humsidity_2m": current.Variables(1).Value(),
             "is_day": current.Variables(2).Value(),
             "rain": current.Variables(3).Value(),
         }
@@ -51,12 +50,13 @@ class WeatherSource(DataSource):
     def parse(self, response_dict: dict | None = None) -> RawWeatherResponse:
         """Parses raw response dict and returns RawWeatherResponse"""
         try:
-            response: RawWeatherResponse = RawWeatherResponse.model_validate(response_dict if response_dict else self.response_dict)
+            response: RawWeatherResponse = RawWeatherResponse.model_validate(
+                response_dict if response_dict else self.response_dict
+            )
 
             return response
-        
-        except ValidationError:
-            raise ResponseValidationError(response_dict, RawWeatherResponse)
-        
-        
 
+        except ValidationError as e:
+            raise ResponseValidationError(
+                self.response_dict, RawWeatherResponse, e
+            ) from e
