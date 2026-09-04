@@ -37,7 +37,7 @@ class WeatherSource(DataSource):
             "timezone_b": response.Timezone(),
             "time": current.Time(),
             "temperature_2m": current.Variables(0).Value(),
-            "relative_humsidity_2m": current.Variables(1).Value(),
+            "relative_humidity_2m": current.Variables(1).Value(),
             "is_day": current.Variables(2).Value(),
             "rain": current.Variables(3).Value(),
         }

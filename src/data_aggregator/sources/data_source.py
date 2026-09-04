@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Self
+from typing import Any, Self
 
 from data_aggregator.domain import ResponseModel
-from data_aggregator.sources.weather_source import RawWeatherResponse
 
 
 class DataSource(ABC):
@@ -14,7 +13,7 @@ class DataSource(ABC):
 
 
     @abstractmethod
-    def fetch(self, endpoint: str, *kwargs) -> dict | Self:
+    def fetch(self, endpoint: str, *kwargs) -> Self | Any:
         """Fetches the data and returns RawWeatherResponse"""
         
 

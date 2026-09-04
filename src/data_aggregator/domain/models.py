@@ -15,3 +15,18 @@ class RawWeatherResponse(BaseModel, ResponseModel):
     relative_humidity_2m: float
     is_day: float
     rain: float
+
+
+class CountryModel(BaseModel):
+    official_name: str
+    capitals: list[str]
+    region: str
+    subregion: str
+    currencies: list[str]
+    languages: list[str]
+
+    
+class RawCountriesResponse(BaseModel, ResponseModel):
+    countries: list[CountryModel]
+    count: int
+    

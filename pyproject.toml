@@ -5,7 +5,9 @@ requires-python = ">=3.12"
 
 dependencies = [
     "pydantic",
-    "openmeteo_requests"
+    "openmeteo_requests",
+    "requests",
+    "python-dotenv"
 ]
 
 [project.optional-dependencies]

@@ -5,8 +5,8 @@ ws = WeatherSource()
 
 try:
     response = ws.fetch().parse()
-    print(response)
+    print(repr(response))
 
 except ResponseValidationError as e:
-    print(e.argslist)
+    print(e)
 
