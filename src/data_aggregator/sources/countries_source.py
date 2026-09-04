@@ -4,9 +4,9 @@ from typing import Self
 import requests
 from dotenv import load_dotenv
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
-from pydantic import ValidationError
 
-from data_aggregator.domain import RawCountriesResponse, ResponseModel
+from data_aggregator.domain import RawCountriesResponse
+from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 from data_aggregator.sources.data_source import DataSource
 
@@ -18,11 +18,15 @@ BASE_URL = "https://api.restcountries.com/countries/v5"
 
 
 class CountriesSource(DataSource):
+
+    response_model = RawCountriesResponse
+
     def __init__(
         self, base_url: str = BASE_URL, endpoints: list[str] | None = None
     ) -> None:
         super().__init__(base_url, endpoints)
         self.header = {"Authorization": f"Bearer {API_KEY}"}
+        
 
     def fetch(self, endpoint: str, *kwargs) -> Self:
         """Fetches the data and returns raw response Self"""
@@ -37,7 +41,9 @@ class CountriesSource(DataSource):
                 countries.append(
                     {
                         "official_name": country["names"]["official"],
-                        "capitals": [capital["name"] for capital in country["capitals"]],
+                        "capitals": [
+                            capital["name"] for capital in country["capitals"]
+                        ],
                         "region": country["region"],
                         "subregion": country["subregion"],
                         "currencies": [
@@ -56,16 +62,12 @@ class CountriesSource(DataSource):
         except (Timeout, ConnectionError, HTTPError, RequestException) as e:
             raise DataFetchError(f"Fetching failed in {self.__class__}") from e
 
-    def parse(self, response_dict: dict | None=None) -> RawCountriesResponse:
+    @parser
+    def parse(self, response_dict: dict | None = None) -> RawCountriesResponse:
         """parses raw response dict and resturn RawCountriesResponseModel"""
 
-        try:
-            response = RawCountriesResponse.model_validate(
-                response_dict if response_dict else self.response_dict
-            )
+        response = RawCountriesResponse.model_validate(
+            response_dict if response_dict is not None else self.response_dict
+        )
 
-            return response
-        except ValidationError as e:
-            raise ResponseValidationError(
-                self.response_dict, RawCountriesResponse, e
-            ) from e
+        return response

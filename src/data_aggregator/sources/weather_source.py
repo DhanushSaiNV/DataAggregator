@@ -1,8 +1,8 @@
 from typing import Self
 
 import openmeteo_requests
-from pydantic import ValidationError
 
+from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 from data_aggregator.domain.models import RawWeatherResponse
 from data_aggregator.sources.data_source import DataSource
@@ -19,6 +19,9 @@ DEFAULT_PARAMS = {
 
 
 class WeatherSource(DataSource):
+
+    response_model = RawWeatherResponse
+
     def __init__(
         self, base_url: str = BASE_URL, endpoints: list[str] | None = None
     ) -> None:
@@ -46,17 +49,12 @@ class WeatherSource(DataSource):
 
         return self
 
-
+    @parser
     def parse(self, response_dict: dict | None = None) -> RawWeatherResponse:
         """Parses raw response dict and returns RawWeatherResponse"""
-        try:
-            response: RawWeatherResponse = RawWeatherResponse.model_validate(
-                response_dict if response_dict else self.response_dict
-            )
+        response: RawWeatherResponse = RawWeatherResponse.model_validate(
+            response_dict if response_dict else self.response_dict
+        )
 
-            return response
+        return response
 
-        except ValidationError as e:
-            raise ResponseValidationError(
-                self.response_dict, RawWeatherResponse, e
-            ) from e
