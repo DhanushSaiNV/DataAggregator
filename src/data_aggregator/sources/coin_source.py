@@ -1,7 +1,6 @@
 import os
 from typing import Self
 
-import requests
 from coingecko_sdk import Coingecko
 from dotenv import load_dotenv
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
@@ -31,9 +30,6 @@ class CoinSource(DataSource):
         try:
             response = self.client.coins.get_id(endpoint).model_dump()
 
-            # self.response_dict = {
-            #     response["id"]
-            # }
             coin_response_dict = parse_keys(
                 response,
                 ["id", "symbol", "name", "categories"],

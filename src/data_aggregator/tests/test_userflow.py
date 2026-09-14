@@ -1,17 +1,18 @@
-# from data_aggregator.domain import ResponseModel
-# from data_aggregator.sources.weather_source import WeatherSource
-from data_aggregator.domain.models import RawWeatherResponse
+VALIDATE=1
+CLEAN, TRANSFORM, res, SOURCE, MODEL = 1,1,1,1,1
 
-# weather_source = WeatherSource()
+da = DataAggregator()
 
-# response = weather_source.fetch().parse()
+# bad: creation is independent of sources and responses
+# pipeline = da.createpipeline(SOURCES, MODELS)
 
-# print("Coordinates: " , response.coordinates)
-# print("Timezone: " , response.timezone_b)
-# print("Time: " , response.time)
-# print("Temperature: " , response.temperature_2m)
-# print("Humidity: " , response.relative_humidity_2m)
-# print("Is Day: " , response.is_day)
-# print("Is raining: " , response.rain)
+pipeline = da.create_pipeline(
+    stages=[VALIDATE, CLEAN, TRANSFORM]
+)
 
-print(RawWeatherResponse)
+pipeline.run(
+    response=res, 
+    source=SOURCE,
+    model=MODEL
+)
+
