@@ -5,11 +5,22 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+# ResponseModel
+# ├── ValidatedResponseModel
+# │   ├── ValidatedWeatherResponse
+# │   ├── ValidatedCountriesResponse
+# │   └── ValidatedCoinResponse
+# │
+# ├── CleanedResponseModel
+# ├── TransformedResponseModel
+# ├── RawWeatherResponse
+# ├── RawCountriesResponse
+# └── RawCoinResponse
 
-class ResponseModel(ABC):
+class ResponseModel(BaseModel, ABC):
     pass
 
-class ValidatedResponseModel(BaseModel, ResponseModel):
+class ValidatedResponseModel(ResponseModel):
     pass
 
 class CleanedResponseModel(ResponseModel):
@@ -19,7 +30,7 @@ class TransformedResponseModel(ResponseModel):
     pass
 
 
-class RawWeatherResponse(BaseModel, ResponseModel):
+class RawWeatherResponse(ResponseModel):
     coordinates: tuple[float, float]
     timezone_b: bytes
     time: int
@@ -32,7 +43,7 @@ class RawWeatherResponse(BaseModel, ResponseModel):
 class ValidatedWeatherResponse(ValidatedResponseModel):
     latitude: Annotated[float, Field(ge=-90.0, le=90.0)]
     longitude: Annotated[float, Field(ge=-180.0, le=180.0)]
-    timezone: Annotated[str, Field(min_length=1)]
+    timezone_b: Annotated[str, Field(min_length=1)]
     time: datetime
     temperature_2m: Annotated[float, Field(ge=-100.0, le=100.0)]
     relative_humidity_2m: Annotated[int, Field(ge=0, le=100)]
@@ -51,7 +62,7 @@ class ValidatedWeatherResponse(ValidatedResponseModel):
             data.setdefault("longitude", lon)
         return data
 
-    @field_validator("timezone", mode="before")
+    @field_validator("timezone_b", mode="before")
     @classmethod
     def decode_timezone(cls, v):
         if isinstance(v, bytes):
@@ -101,7 +112,7 @@ class CountryModel(BaseModel):
     languages: list[str]
 
     
-class RawCountriesResponse(BaseModel, ResponseModel):
+class RawCountriesResponse(ResponseModel):
     countries: list[CountryModel]
     count: int
 
@@ -169,7 +180,7 @@ class MarketDataModel(BaseModel):
     price_change_percentage_1y: float
 
 
-class RawCoinResponse(BaseModel, ResponseModel):
+class RawCoinResponse(ResponseModel):
     id: str
     symbol: str
     name: str

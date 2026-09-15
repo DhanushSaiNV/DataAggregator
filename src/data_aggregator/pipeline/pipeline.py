@@ -1,43 +1,39 @@
+from dataclasses import dataclass
 from enum import Enum, auto
+from typing import Callable
 
 from pydantic import ValidationError
 
 from data_aggregator.domain.exceptions import (
     InvalidPipelineStageError,
+    InvalidTransformerError,
     ValidationPipelineError,
 )
 from data_aggregator.domain.models import (
     ResponseModel,
     TransformedResponseModel,
-    ValidatedCoinResponse,
-    ValidatedCountriesResponse,
     ValidatedResponseModel,
-    ValidatedWeatherResponse,
 )
-from data_aggregator.pipeline.transformers import (
-    transform_coins,
-    transform_countries,
-    transform_weather,
-)
+from data_aggregator.pipeline.transformers import TRANSFORMERS
 from data_aggregator.sources.data_source import DataSource
-from data_aggregator.sources.weather_source import WeatherSource
-from data_aggregator.sources.coin_source import CoinSource
-from data_aggregator.sources.countries_source import CountriesSource
 
 
 class PipelineStage(Enum):
     VALIDATE = auto()
-    CLEAN = auto()
     TRANSFORM = auto()
 
+type StageOutput = ResponseModel | ValidatedResponseModel | TransformedResponseModel 
 
-TRANSFORMERS = {
-    WeatherSource : transform_weather,
-    CoinSource : transform_coins,
-    CountriesSource : transform_countries
-}
 
-    
+@dataclass
+class PipelineState:
+    source: type[DataSource]
+    response: ResponseModel
+    validation_model: type[ValidatedResponseModel]
+    data: ResponseModel | None = None
+
+
+
 class Pipeline:
     def __init__(self, *stages: PipelineStage) -> None:
         for stage in stages:
@@ -47,31 +43,53 @@ class Pipeline:
         self.stages = stages
 
         self.STEP_REGISTRY = {
-            PipelineStage.VALIDATE: self.validate,
-            PipelineStage.TRANSFORM: self.transform
+            PipelineStage.VALIDATE: self._validate,
+            PipelineStage.TRANSFORM: self._transform
         }
 
 
-    def validate(
+    def _validate(
             self,
-            response: ResponseModel,
-            model: type[ValidatedResponseModel]
-    ) -> ValidatedResponseModel:
+            state: PipelineState  
+    ) -> StageOutput:
         """Validates ResponseModel(s) and returns ValidatedResponseModel(s)"""
         try:
-            return model.model_validate(response)
+            return state.validation_model.model_validate(state.response)
 
         except ValidationError as err:
             raise ValidationPipelineError("Pipeline Validation Error: Error while validating response.") from err
 
         
-    def transform(
+    def _transform(
             self,
-            response: ValidatedResponseModel,
-            model: type[DataSource]
+            state: PipelineState
     ) -> TransformedResponseModel:
-        # Run respective transformer fn based on model.
-        pass
+        # Run respective transformer fn based on source.
+        try:
+            transform_fn: Callable = TRANSFORMERS[state.source]
+        except KeyError as err:
+            raise InvalidTransformerError(f"Transformer {state.source.__name__} Not Found") from err
+        
+        return transform_fn(state.response)
+        
     
-    def run(self, response, source, model):
-        ...
+    def run(
+            self,
+            response: ResponseModel,
+            source: type[DataSource],
+            validation_model: type[ValidatedResponseModel]
+    ) -> PipelineState:
+        """
+            Takes a response, its source and response model
+            performs stages of pipeline steps from self.stages
+            returns ProcessedData
+        """
+
+        self.state = PipelineState(response=response, source=source, validation_model=validation_model)
+
+        for stage in self.stages:
+            self.state.data = self.STEP_REGISTRY[stage](self.state)
+
+        return self.state
+
+        

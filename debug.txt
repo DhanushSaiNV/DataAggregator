@@ -1,1 +1,1 @@
-current_pricehigh_24hlow_24hprice_change_24hprice_change_percentage_24hprice_change_percentage_7dprice_change_percentage_30dprice_change_percentage_200dprice_change_percentage_1y
+ValidatedWeatherResponse(latitude=16.2741641998291, longitude=80.42735290527344, timezone_b='Asia/Kolkata', time=datetime.datetime(2026, 9, 15, 17, 0, tzinfo=datetime.timezone.utc), temperature_2m=27.399999618530273, relative_humidity_2m=89, is_day=False, rain=0.0)
