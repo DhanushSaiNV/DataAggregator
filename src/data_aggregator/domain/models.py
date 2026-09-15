@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class ResponseModel(ABC):
     pass
 
-class ValidatedResponseModel(ResponseModel):
+class ValidatedResponseModel(BaseModel, ResponseModel):
     pass
 
 class CleanedResponseModel(ResponseModel):
@@ -29,7 +29,7 @@ class RawWeatherResponse(BaseModel, ResponseModel):
     rain: float
 
 
-class ValidatedWeatherResponse(BaseModel, ValidatedResponseModel):
+class ValidatedWeatherResponse(ValidatedResponseModel):
     latitude: Annotated[float, Field(ge=-90.0, le=90.0)]
     longitude: Annotated[float, Field(ge=-180.0, le=180.0)]
     timezone: Annotated[str, Field(min_length=1)]
@@ -131,7 +131,7 @@ class ValidatedCountryModel(BaseModel):
         return v
 
 
-class ValidatedCountriesResponse(BaseModel, ValidatedResponseModel):
+class ValidatedCountriesResponse(ValidatedResponseModel):
     model_config = ConfigDict(from_attributes=True)
 
     countries: list[ValidatedCountryModel]
@@ -238,7 +238,7 @@ class ValidatedMarketDataModel(BaseModel):
         return self
 
 
-class ValidatedCoinResponse(BaseModel, ValidatedResponseModel):
+class ValidatedCoinResponse(ValidatedResponseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: Annotated[str, Field(min_length=1)]

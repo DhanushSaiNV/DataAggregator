@@ -10,6 +10,8 @@ from data_aggregator.domain.models import ResponseModel
  | |-- 
  |
  |- PipelineError
+ | |-- InvalidPipelineStageError
+ | |-- ValidationPipelineError
  |
  |- VisualError
   ...
@@ -58,6 +60,11 @@ class ResponseValidationError(DataFetchError):
 class PipelineError(AggregatorError):
     pass
 
+class InvalidPipelineStageError(PipelineError):
+    pass
+
+class ValidationPipelineError(PipelineError):
+    pass
 
 class VisualEror(AggregatorError):
     pass
