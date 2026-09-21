@@ -5,7 +5,8 @@ import openmeteo_requests
 from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 from data_aggregator.domain.models import RawWeatherResponse
-from data_aggregator.sources.data_source import DataSource
+
+from .data_source import DataSource
 
 BASE_URL = "https://api.open-meteo.com/v1/forecast"
 

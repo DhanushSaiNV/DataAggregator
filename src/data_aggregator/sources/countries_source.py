@@ -8,7 +8,8 @@ from requests.exceptions import ConnectionError, HTTPError, RequestException, Ti
 from data_aggregator.domain import RawCountriesResponse
 from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
-from data_aggregator.sources.data_source import DataSource
+
+from .data_source import DataSource
 
 load_dotenv(r"C:\Users\dhanu\Documents\codes\Career\PythonMastery\DataAggregator\.env")
 

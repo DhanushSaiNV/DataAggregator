@@ -9,12 +9,16 @@ from data_aggregator.domain import RawCoinResponse
 from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 from data_aggregator.shared.key_parser import parse_keys
-from data_aggregator.sources.data_source import DataSource
+
+from .data_source import DataSource
 
 load_dotenv(r"C:\Users\dhanu\Documents\codes\Career\PythonMastery\DataAggregator\.env")
 
 API_KEY = os.getenv("COINGECKO_API_KEY")
 
+__all__ = [
+    "CoinSource"
+]
 
 class CoinSource(DataSource):
 

@@ -1,6 +1,6 @@
 from typing import Any
 
-from data_aggregator.domain.models import ResponseModel
+from .models import ResponseModel
 
 """
 - AggregatorError

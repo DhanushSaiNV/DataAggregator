@@ -2,7 +2,7 @@ from functools import wraps
 
 from pydantic import ValidationError
 
-from data_aggregator.domain.exceptions import *
+from .exceptions import *
 
 
 def parser(func):
