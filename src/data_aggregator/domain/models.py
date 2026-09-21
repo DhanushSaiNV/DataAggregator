@@ -1,6 +1,6 @@
 
 from abc import ABC
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -73,7 +73,7 @@ class ValidatedWeatherResponse(ValidatedResponseModel):
     @classmethod
     def parse_unix_time(cls, v):
         if isinstance(v, (int, float)):
-            return datetime.fromtimestamp(v, tz=timezone.utc)
+            return datetime.fromtimestamp(v, tz=UTC)
         return v
 
     @field_validator("relative_humidity_2m", mode="before")

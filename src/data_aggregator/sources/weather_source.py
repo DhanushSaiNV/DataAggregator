@@ -19,7 +19,6 @@ DEFAULT_PARAMS = {
 
 
 class WeatherSource(DataSource):
-
     response_model = RawWeatherResponse
 
     def __init__(
@@ -28,12 +27,14 @@ class WeatherSource(DataSource):
         super().__init__(base_url, endpoints)
         self.openmeteo = openmeteo_requests.Client()
 
-
     def fetch(self, endpoint: str | None = None, *kwargs) -> Self:
         """Fetches the data and returns raw response dict"""
         response = self.openmeteo.weather_api(BASE_URL, DEFAULT_PARAMS)[0]
 
         current = response.Current()
+
+        if not current:
+            raise DataFetchError("OpenMeteo.Current() responded with None")
 
         response_dict: dict = {
             "coordinates": (response.Latitude(), response.Longitude()),
@@ -57,4 +58,3 @@ class WeatherSource(DataSource):
         )
 
         return response
-
