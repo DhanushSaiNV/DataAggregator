@@ -18,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # └── RawCoinResponse
 
 class ResponseModel(BaseModel, ABC):
-    pass
+    model_config = ConfigDict(extra="forbid")
 
 class ValidatedResponseModel(ResponseModel):
     pass
