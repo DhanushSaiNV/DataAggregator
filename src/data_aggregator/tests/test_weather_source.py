@@ -1,7 +1,7 @@
 from data_aggregator.domain.exceptions import *
-from data_aggregator.sources.weather_source import WeatherSource
+from data_aggregator.sources.weather_source import CoinSource
 
-ws = WeatherSource()
+ws = CoinSource()
 
 try:
     response = ws.fetch().parse()

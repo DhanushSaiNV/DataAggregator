@@ -17,6 +17,7 @@ class DataAggregator:
 
         self.pipeline_configs: list[PipelineConfig] = []
         self.pipeline_state: PipelineState
+        self.pipeline_output_states: list[PipelineState] = []
 
         self.pipeline = Pipeline(*pipeline_stages)
 
@@ -65,8 +66,28 @@ class DataAggregator:
         except DataFetchError as err:
             raise AggregatorError("ERROR: Data fetching failed.") from err
 
-    def _transform(self) -> None:
-        pass
+    def _transform(self) -> list[PipelineState]:
+        if not self.pipeline_configs:
+            raise AggregatorError("ERROR: Invalid pipeline config.")
+
+        for config in self.pipeline_configs:
+            try:
+                output_state: PipelineState = self.pipeline.run(
+                    config
+                )
+            except InvalidPipelineStageError as err:
+                raise AggregatorError("ERROR: Invalid pipeline stage.") from err
+            except ValidationPipelineError as err:
+                raise AggregatorError(f"ERROR: Response Validation failed; {err.message}") from err
+            except InvalidTransformerError as err:
+                raise AggregatorError("ERROR: Invalid Transformer; ") from err
+            
+            self.pipeline_output_states.append(
+                output_state
+            )
+
+        return self.pipeline_output_states
+
 
     def _display(self):
         pass

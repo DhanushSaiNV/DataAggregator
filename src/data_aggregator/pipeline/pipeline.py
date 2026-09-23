@@ -67,7 +67,9 @@ class Pipeline:
 
         except ValidationError as err:
             raise ValidationPipelineError(
-                "Pipeline Validation Error: Error while validating response."
+                "Pipeline Validation Error: Error while validating response.",
+                state.response,
+                state.validation_model
             ) from err
 
     def _transform(self, state: PipelineState) -> StageOutput:

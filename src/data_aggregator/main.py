@@ -5,9 +5,11 @@ from data_aggregator.sources import CoinSource, CountriesSource, WeatherSource
 
 from .data_aggregator import DataAggregator
 
-sources = [CoinSource, CountriesSource, WeatherSource]
+sources = [WeatherSource, CountriesSource, CoinSource]
 pipeline_stages = [PipelineStage.VALIDATE, PipelineStage.TRANSFORM]
 
 da = DataAggregator(sources, pipeline_stages)
 
-pprint(da._fetch())
+da._fetch()
+# pprint(da._fetch(), indent=4)
+pprint(da   ._transform(), indent=4)

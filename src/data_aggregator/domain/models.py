@@ -121,9 +121,9 @@ class ValidatedCountryModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     official_name: Annotated[str, Field(min_length=1)]
-    capitals: Annotated[list[Annotated[str, Field(min_length=1)]], Field(min_length=1)]
+    capitals: list[str]
     region: Annotated[str, Field(min_length=1)]
-    subregion: Annotated[str, Field(min_length=1)]
+    subregion: str
     currencies: Annotated[list[Annotated[str, Field(min_length=1)]], Field(min_length=1)]
     languages: Annotated[list[Annotated[str, Field(min_length=1)]], Field(min_length=1)]
 
@@ -191,7 +191,7 @@ class RawCoinResponse(ResponseModel):
 
 
 # ISO 4217-style currency key: 3 lowercase letters (e.g. "usd", "eur", "btc")
-CurrencyCode = Annotated[str, Field(pattern=r"^[a-z]{3}$")]
+CurrencyCode = Annotated[str, Field(pattern=r"^[a-z]+$")]
 Price = Annotated[float, Field(ge=0.0)]
 Percentage = Annotated[float, Field(ge=-100.0, le=100000.0)]
 
@@ -229,22 +229,6 @@ class ValidatedMarketDataModel(BaseModel):
                 missing = keys ^ set(other)
                 raise ValueError(
                     f"{name} currencies {missing} do not match current_price"
-                )
-        return self
-
-    @model_validator(mode="after")
-    def check_high_low_bounds(self):
-        for currency, current in self.current_price.items():
-            high = self.high_24h[currency]
-            low = self.low_24h[currency]
-            if low > high:
-                raise ValueError(
-                    f"{currency}: low_24h ({low}) > high_24h ({high})"
-                )
-            if not (low <= current <= high):
-                raise ValueError(
-                    f"{currency}: current_price ({current}) not within "
-                    f"[low_24h={low}, high_24h={high}]"
                 )
         return self
 

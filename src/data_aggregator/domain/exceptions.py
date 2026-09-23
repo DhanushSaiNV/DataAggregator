@@ -1,6 +1,6 @@
 from typing import Any
 
-from .models import ResponseModel
+from .models import ResponseModel, ValidatedResponseModel
 
 """
 - AggregatorError
@@ -73,7 +73,34 @@ class InvalidTransformerError(PipelineError):
     pass
 
 class ValidationPipelineError(PipelineError):
-    pass
+    def __init__(
+        self,
+        msg,
+        response: ResponseModel | None = None,
+        validation_model: type[ValidatedResponseModel] | None = None,
+        *args: object,
+    ) -> None:
+        self.response = response
+        self.validation_model = validation_model
+        self.argslist = args
+
+        response_msg = (
+            str(response)
+            if response is not None
+            else "Response model not passed."
+        )
+        
+        validated_model_msg = (
+            repr(validation_model.__name__)
+            if validation_model is not None
+            else "ValidatedResponse model not passed."
+        )
+
+        args_str = " ".join(str(arg) for arg in args) if args else ""
+        
+        self.message = f"Validation error: {msg}\nRepsonse Model: {response_msg}\nValidated response model:{validated_model_msg}\n\n{args_str}".strip()
+
+        super().__init__(self.message, *args)
 
 class VisualEror(AggregatorError):
     pass
