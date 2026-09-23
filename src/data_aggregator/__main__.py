@@ -6,4 +6,9 @@ from .data_aggregator import DataAggregator
 sources = [WeatherSource, CountriesSource, CoinSource]
 pipeline_stages = [PipelineStage.VALIDATE, PipelineStage.TRANSFORM]
 
-DataAggregator(sources, pipeline_stages).fetch().transform().display()
+result = (
+  DataAggregator(sources, pipeline_stages)
+  .fetch()
+  .transform()
+  .display()
+)
