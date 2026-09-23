@@ -10,7 +10,6 @@ from rich.tree import Tree
 _console = Console()
 
 
-# --- scalar rendering ------------------------------------------------------
 
 def _style_scalar(value: Any) -> Text:
     """Render a leaf value with a minimal, type-aware colour palette."""
@@ -29,7 +28,6 @@ def _is_container(value: Any) -> bool:
     return isinstance(value, (BaseModel, dict, list, tuple, set))
 
 
-# --- recursive walker ------------------------------------------------------
 
 def _render_field(tree: Tree, key: str, value: Any) -> None:
     label = Text(key, style="bold magenta")
@@ -50,7 +48,6 @@ def _render_field(tree: Tree, key: str, value: Any) -> None:
 def _render(tree: Tree, value: Any) -> None:
     """Recursively fill a rich Tree with any pydantic / python structure."""
     if isinstance(value, BaseModel):
-        # pydantic's __iter__ yields (field_name, field_value) pairs
         for name, field_value in value:
             _render_field(tree, name, field_value)
 
@@ -66,11 +63,10 @@ def _render(tree: Tree, value: Any) -> None:
             else:
                 tree.add(Text.assemble(Text(f"[{i}] ", style="dim"), _style_scalar(item)))
 
-    else:  # bare scalar passed directly
+    else: 
         tree.add(_style_scalar(value))
 
 
-# --- public API ------------------------------------------------------------
 
 def display(model: BaseModel, *, title: str | None = None) -> None:
     """
