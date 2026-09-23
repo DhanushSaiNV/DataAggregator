@@ -5,7 +5,7 @@ import requests
 from dotenv import load_dotenv
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 
-from data_aggregator.domain import RawCountriesResponse
+from data_aggregator.domain import RawCountriesResponse, ValidatedCountriesResponse
 from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 
@@ -15,21 +15,24 @@ load_dotenv(r"C:\Users\dhanu\Documents\codes\Career\PythonMastery\DataAggregator
 
 API_KEY = os.getenv("REST_COUNTRIES_API_KEY")
 
+if not API_KEY:
+    raise APIKeyError("REST COUNTRIES API KEY NOT FOUND.")
+
+
 BASE_URL = "https://api.restcountries.com/countries/v5"
 
 
 class CountriesSource(DataSource):
-
     response_model = RawCountriesResponse
-
+    validated_model = ValidatedCountriesResponse
+    
     def __init__(
-        self, base_url: str = BASE_URL, endpoints: list[str] | None = None
+        self
     ) -> None:
-        super().__init__(base_url, endpoints)
         self.header = {"Authorization": f"Bearer {API_KEY}"}
         
 
-    def fetch(self, endpoint: str, *kwargs) -> Self:
+    def fetch(self, endpoint: str = "?q=indi&pretty=1", *kwargs) -> Self:
         """Fetches the data and returns raw response Self"""
         try:
             response = requests.get(BASE_URL + endpoint, headers=self.header)
@@ -70,5 +73,7 @@ class CountriesSource(DataSource):
         response = RawCountriesResponse.model_validate(
             response_dict if response_dict is not None else self.response_dict
         )
+
+        self.response = response
 
         return response

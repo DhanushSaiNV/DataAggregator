@@ -5,7 +5,7 @@ from coingecko_sdk import Coingecko
 from dotenv import load_dotenv
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 
-from data_aggregator.domain import RawCoinResponse
+from data_aggregator.domain import RawCoinResponse, ValidatedCoinResponse
 from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 from data_aggregator.shared.key_parser import parse_keys
@@ -16,20 +16,21 @@ load_dotenv(r"C:\Users\dhanu\Documents\codes\Career\PythonMastery\DataAggregator
 
 API_KEY = os.getenv("COINGECKO_API_KEY")
 
+if not API_KEY:
+    raise APIKeyError("COINGECKO API KEY NOT FOUND.")
+
 __all__ = [
     "CoinSource"
 ]
 
 class CoinSource(DataSource):
-
     response_model = RawCoinResponse
+    validated_model = ValidatedCoinResponse
 
-    def __init__(self, base_url: str = "", endpoints: list[str] | None = None) -> None:
-        super().__init__(base_url, endpoints)
-
+    def __init__(self) -> None:
         self.client = Coingecko(demo_api_key=API_KEY, environment="demo")
 
-    def fetch(self, endpoint: str, *kwargs) -> Self:
+    def fetch(self, endpoint: str = "bitcoin", *kwargs) -> Self:
         """Fetches the data and returns raw response Self"""
         try:
             response = self.client.coins.get_id(endpoint).model_dump()
@@ -70,5 +71,7 @@ class CoinSource(DataSource):
         response = RawCoinResponse.model_validate(
             response_dict if response_dict is not None else self.response_dict
         )
+
+        self.response = response
 
         return response

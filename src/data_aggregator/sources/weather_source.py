@@ -4,7 +4,7 @@ import openmeteo_requests
 
 from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
-from data_aggregator.domain.models import RawWeatherResponse
+from data_aggregator.domain.models import *
 
 from .data_source import DataSource
 
@@ -21,11 +21,11 @@ DEFAULT_PARAMS = {
 
 class WeatherSource(DataSource):
     response_model = RawWeatherResponse
-
+    validated_model = ValidatedWeatherResponse
+    
     def __init__(
-        self, base_url: str = BASE_URL, endpoints: list[str] | None = None
+        self
     ) -> None:
-        super().__init__(base_url, endpoints)
         self.openmeteo = openmeteo_requests.Client()
 
     def fetch(self, endpoint: str | None = None, *kwargs) -> Self:
@@ -58,4 +58,6 @@ class WeatherSource(DataSource):
             response_dict if response_dict else self.response_dict
         )
 
+        self.response = response
+        
         return response

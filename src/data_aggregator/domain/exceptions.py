@@ -6,8 +6,9 @@ from .models import ResponseModel
 - AggregatorError
  |
  |- DataFetchError
+ | |-- APIKeyError
  | |-- ResponseValidationError
- | |-- 
+ | |-- InvalidSourceError
  |
  |- PipelineError
  | |-- InvalidPipelineStageError
@@ -27,6 +28,8 @@ class AggregatorError(Exception):
 class DataFetchError(AggregatorError):
     pass
 
+class APIKeyError(DataFetchError):
+    pass
 
 class ResponseValidationError(DataFetchError):
     def __init__(
@@ -53,10 +56,12 @@ class ResponseValidationError(DataFetchError):
 
         args_str = " ".join(str(arg) for arg in args) if args else ""
         
-        message = f"Validation error: {dict_msg}\nExpected model: {model_msg}\n{args_str}".strip()
+        self.message = f"Validation error: {dict_msg}\nExpected model: {model_msg}\n{args_str}".strip()
 
-        super().__init__(message, *args)
+        super().__init__(self.message, *args)
 
+class InvalidSourceError(DataFetchError):
+    pass
 
 class PipelineError(AggregatorError):
     pass

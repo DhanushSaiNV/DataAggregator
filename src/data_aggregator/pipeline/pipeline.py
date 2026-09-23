@@ -28,6 +28,13 @@ type StageOutput = ResponseModel | ValidatedResponseModel | TransformedResponseM
 
 
 @dataclass
+class PipelineConfig:
+    response: ResponseModel
+    source: type[DataSource]
+    validation_model: type[ValidatedResponseModel]
+
+
+@dataclass
 class PipelineState:
     source: type[DataSource]
     response: ResponseModel
@@ -78,9 +85,7 @@ class Pipeline:
 
     def run(
         self,
-        response: ResponseModel,
-        source: type[DataSource],
-        validation_model: type[ValidatedResponseModel],
+        config: PipelineConfig
     ) -> PipelineState:
         """
         Takes a response, its source and response model
@@ -89,7 +94,7 @@ class Pipeline:
         """
 
         self.state = PipelineState(
-            response=response, source=source, validation_model=validation_model
+            response=config.response, source=config.source, validation_model=config.validation_model
         )
 
         for stage in self.stages:
