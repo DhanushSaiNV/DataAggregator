@@ -1,4 +1,6 @@
-from data_aggregator.domain.exceptions import *
+from typing import Self
+
+from data_aggregator.domain import *
 from data_aggregator.pipeline import (
     Pipeline,
     PipelineConfig,
@@ -21,7 +23,7 @@ class DataAggregator:
 
         self.pipeline = Pipeline(*pipeline_stages)
 
-    def _fetch(self) -> list[ResponseModel]:
+    def fetch(self) -> Self:
         """Fetches data from provided DataSource classes. Parses them."""
         self.responses: list[ResponseModel] = []
 
@@ -43,7 +45,7 @@ class DataAggregator:
 
             self.responses.append(response)
 
-        return self.responses
+        return self
 
     def __update_pipeline_configs(self, datasource_obj, response, Source):
         self.pipeline_configs.append(
@@ -66,7 +68,7 @@ class DataAggregator:
         except DataFetchError as err:
             raise AggregatorError("ERROR: Data fetching failed.") from err
 
-    def _transform(self) -> list[PipelineState]:
+    def transform(self) -> Self:
         if not self.pipeline_configs:
             raise AggregatorError("ERROR: Invalid pipeline config.")
 
@@ -86,8 +88,15 @@ class DataAggregator:
                 output_state
             )
 
-        return self.pipeline_output_states
+        return self
 
 
-    def _display(self):
-        pass
+    def display(self) -> Self:
+        for output_state in self.pipeline_output_states:
+            display(output_state.data)
+            print("\n")
+            print("-" * 10)
+            print("\n")
+
+        return self
+
