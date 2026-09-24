@@ -12,7 +12,10 @@ from data_aggregator.sources import DataSource
 
 class DataAggregator:
     def __init__(
-        self, sources: list[type[DataSource]], pipeline_stages: list[PipelineStage]
+        self,
+        sources: list[type[DataSource]],
+        pipeline_stages: list[PipelineStage],
+        _async: bool = True,
     ) -> None:
         self.sources = sources
         self.pipeline_stages = pipeline_stages
@@ -56,10 +59,12 @@ class DataAggregator:
             )
         )
 
-    def __fetch_parse_from_datasource(self, datasource_obj: DataSource) -> ResponseModel:
+    def __fetch_parse_from_datasource(
+        self, datasource_obj: DataSource
+    ) -> ResponseModel:
         try:
             return datasource_obj.fetch().parse()
-        
+
         except ResponseValidationError as err:
             raise AggregatorError(
                 f"ERROR: Data Validation Failed.\n{err.message}"
@@ -74,22 +79,19 @@ class DataAggregator:
 
         for config in self.pipeline_configs:
             try:
-                output_state: PipelineState = self.pipeline.run(
-                    config
-                )
+                output_state: PipelineState = self.pipeline.run(config)
             except InvalidPipelineStageError as err:
                 raise AggregatorError("ERROR: Invalid pipeline stage.") from err
             except ValidationPipelineError as err:
-                raise AggregatorError(f"ERROR: Response Validation failed; {err.message}") from err
+                raise AggregatorError(
+                    f"ERROR: Response Validation failed; {err.message}"
+                ) from err
             except InvalidTransformerError as err:
                 raise AggregatorError("ERROR: Invalid Transformer; ") from err
-            
-            self.pipeline_output_states.append(
-                output_state
-            )
+
+            self.pipeline_output_states.append(output_state)
 
         return self
-
 
     def display(self) -> Self:
         for output_state in self.pipeline_output_states:
@@ -99,4 +101,3 @@ class DataAggregator:
             print("\n")
 
         return self
-
