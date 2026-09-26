@@ -11,7 +11,7 @@ from data_aggregator.domain import RawCountriesResponse, ValidatedCountriesRespo
 from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 
-from .data_source import DataSource
+from .data_source import AsyncDataSource, DataSource
 
 load_dotenv(r"C:\Users\dhanu\Documents\codes\Career\PythonMastery\DataAggregator\.env")
 
@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 
-class AsyncCountriesSource(DataSource):
+class AsyncCountriesSource(AsyncDataSource):
     response_model = RawCountriesResponse
     validated_model = ValidatedCountriesResponse
     

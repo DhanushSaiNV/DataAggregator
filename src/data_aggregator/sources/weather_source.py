@@ -6,7 +6,7 @@ from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 from data_aggregator.domain.models import *
 
-from .data_source import DataSource
+from .data_source import AsyncDataSource, DataSource
 
 BASE_URL = "https://api.open-meteo.com/v1/forecast"
 
@@ -19,7 +19,7 @@ DEFAULT_PARAMS = {
 }
 
 
-class AsyncWeatherSource(DataSource):
+class AsyncWeatherSource(AsyncDataSource):
     response_model = RawWeatherResponse
     validated_model = ValidatedWeatherResponse
     
