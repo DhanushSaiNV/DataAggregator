@@ -2,19 +2,21 @@
 
 A Python practice project that fetches, validates, and displays live data from multiple public APIs through a composable pipeline.
 
-Built to explore: **Pydantic**, **abstract base classes**, **custom decorators**, **exception hierarchies**, **the pipeline pattern**, and **rich terminal output**.
+Built to explore: **Pydantic**, **abstract base classes**, **asyncio**, **custom decorators**, **exception hierarchies**, **the pipeline pattern**, and **rich terminal output**.
 
 ---
 
 ## What It Does
 
-Pulls live data from three sources simultaneously, runs each response through a configurable pipeline (validate → transform), and pretty-prints the result as a styled tree in the terminal.
+Pulls live data from three sources, runs each response through a configurable pipeline (validate → transform), and pretty-prints the result as a styled tree in the terminal.
+
+Supports two execution modes — **async** (default, concurrent fetching via `asyncio.gather`) and **sync** (sequential, opt-in via a CLI flag).
 
 | Source | API | Data |
 |---|---|---|
-| `WeatherSource` | Open-Meteo (free, no key) | Temperature, humidity, rain, day/night |
-| `CountriesSource` | REST Countries v5 | Official name, capitals, region, currencies, languages |
-| `CoinSource` | CoinGecko Demo | Bitcoin price, 24h/7d/30d/200d/1y % changes |
+| `WeatherSource` / `AsyncWeatherSource` | Open-Meteo (free, no key) | Temperature, humidity, rain, day/night |
+| `CountriesSource` / `AsyncCountriesSource` | REST Countries v5 | Official name, capitals, region, currencies, languages |
+| `CoinSource` / `AsyncCoinSource` | CoinGecko Demo | Bitcoin price, 24h/7d/30d/200d/1y % changes |
 
 ---
 
@@ -22,8 +24,8 @@ Pulls live data from three sources simultaneously, runs each response through a 
 
 ```
 src/data_aggregator/
-├── __main__.py          # Entry point — wires sources + pipeline and runs
-├── data_aggregator.py   # DataAggregator class: fetch → transform → display
+├── __main__.py          # Entry point — argparse flag selects sync vs. async mode
+├── data_aggregator.py   # DataAggregator (sync) + AsyncDataAggregator (async)
 │
 ├── domain/
 │   ├── models.py        # Pydantic models: Raw*, Validated*, response hierarchy
@@ -32,10 +34,10 @@ src/data_aggregator/
 │   └── cli.py           # Rich-based recursive tree renderer (display function)
 │
 ├── sources/
-│   ├── data_source.py   # Abstract base: fetch() + parse()
-│   ├── weather_source.py
-│   ├── countries_source.py
-│   └── coin_source.py
+│   ├── data_source.py   # Two ABCs: DataSource (sync) + AsyncDataSource (async)
+│   ├── weather_source.py   # WeatherSource + AsyncWeatherSource
+│   ├── countries_source.py # CountriesSource + AsyncCountriesSource (uses httpx)
+│   └── coin_source.py      # CoinSource + AsyncCoinSource
 │
 ├── pipeline/
 │   ├── pipeline.py      # Pipeline, PipelineStage (VALIDATE, TRANSFORM), PipelineState
@@ -45,6 +47,8 @@ src/data_aggregator/
 │   └── key_parser.py    # Recursive dict key extractor
 │
 └── tests/
+    ├── practice_asyncio.py      # asyncio.Queue producer/processor/consumer playground
+    ├── test_aggregator.py       # Sync vs. async timing comparison
     ├── test_pipeline.py
     ├── test_coin_source.py
     ├── test_countries_source.py
@@ -82,38 +86,53 @@ REST_COUNTRIES_API_KEY=your_key_here
 ## Run
 
 ```bash
+# Default — async mode (concurrent fetching, faster)
 python -m data_aggregator
+
+# Sync mode — sequential fetching
+python -m data_aggregator --synchronous
 ```
 
-This fetches all three sources, validates the responses, and prints a colour-coded tree to the terminal for each one.
+Both modes print a response time after displaying results, so you can compare performance directly.
 
 ---
 
 ## How It Works
 
-### 1. DataAggregator — the orchestrator
+### 1. Two aggregator classes
+
+`DataAggregator` and `AsyncDataAggregator` share the same pipeline and display logic but differ in how they fetch:
+
+| Class | How it fetches |
+|---|---|
+| `DataAggregator` | Iterates sources sequentially, calls `source.fetch().parse()` |
+| `AsyncDataAggregator` | Fires all `async fetch()` calls concurrently with `asyncio.gather`, then pipelines the results |
+
+Both expose a single `.run(display=True)` method that internally calls fetch → transform → (optionally) display.
+
+### 2. Dual DataSource ABCs
+
+`data_source.py` now defines **two** abstract base classes:
 
 ```python
-DataAggregator(sources, pipeline_stages).fetch().transform().display()
+class DataSource(ABC):           # sync sources
+    def fetch(...) -> Self: ...
+    def parse(...) -> ResponseModel: ...
+
+class AsyncDataSource(ABC):      # async sources
+    async def fetch(...) -> Self: ...
+    def parse(...) -> ResponseModel: ...  # parse stays sync
 ```
 
-- **`fetch()`** — iterates over each `DataSource` subclass, calls `.fetch().parse()`, and builds a `PipelineConfig` per source.
-- **`transform()`** — runs each config through the `Pipeline`, collecting `PipelineState` outputs.
-- **`display()`** — passes each output to `cli.display()` for rich tree rendering.
+Every source ships in both flavours (e.g. `WeatherSource` / `AsyncWeatherSource`). The sync class carries an `async_version` class attribute pointing to its async counterpart.
 
-### 2. DataSource — the abstract contract
+The async `CountriesSource` switches from `requests` to **`httpx.AsyncClient`** for non-blocking HTTP.
 
-Every source implements two methods:
+### 3. CLI flag with argparse
 
-```python
-class DataSource(ABC):
-    def fetch(self, endpoint: str = "", *kwargs) -> Self: ...
-    def parse(self, response_dict: dict | None = None) -> ResponseModel: ...
-```
+`__main__.py` uses `argparse` to expose a `--synchronous` / `-s` flag. Without it, `AsyncDataAggregator` runs by default.
 
-The `@parser` decorator on `parse()` intercepts Pydantic `ValidationError` and re-raises it as `ResponseValidationError` with full context (the dict that failed, the model it was tested against).
-
-### 3. Pipeline — composable stages
+### 4. Pipeline — composable stages
 
 ```python
 Pipeline(PipelineStage.VALIDATE, PipelineStage.TRANSFORM)
@@ -128,14 +147,14 @@ Stages are `Enum` values. The pipeline iterates them in order, passing a `Pipeli
 
 To add a stage: add a new `PipelineStage` variant and register a handler in `STEP_REGISTRY`.
 
-### 4. Models — two-tier Pydantic validation
+### 5. Models — two-tier Pydantic validation
 
 Each source has a **Raw** model (loose, matches the API shape exactly) and a **Validated** model (strict, with field constraints, coercions, and cross-field checks). For example:
 
 - `RawWeatherResponse` stores `timezone_b: bytes` and `is_day: float`
 - `ValidatedWeatherResponse` decodes the bytes to `str`, coerces `is_day` to `bool`, parses Unix time to `datetime`, and enforces lat/lon bounds
 
-### 5. Exception Hierarchy
+### 6. Exception Hierarchy
 
 ```
 AggregatorError
@@ -149,7 +168,7 @@ AggregatorError
     └── InvalidTransformerError
 ```
 
-All exceptions bubble up to `DataAggregator`, which catches each type and re-raises as `AggregatorError` with a clean message.
+All exceptions bubble up through the aggregator, which catches each type and re-raises as `AggregatorError` with a clean message.
 
 ---
 
@@ -159,7 +178,7 @@ All exceptions bubble up to `DataAggregator`, which catches each type and re-rai
 pytest src/data_aggregator/tests/
 ```
 
-> Note: most tests currently make live API calls. They serve as integration smoke tests rather than isolated unit tests.
+> Note: tests make live API calls — they are integration smoke tests, not isolated unit tests. `practice_asyncio.py` and `test_aggregator.py` can be run directly with `python` to observe timing output.
 
 ---
 
@@ -172,7 +191,9 @@ pytest src/data_aggregator/tests/
 - The pipeline / chain-of-responsibility pattern
 - `Enum` + `auto()` for stage definitions
 - `dataclass` for value objects (`PipelineConfig`, `PipelineState`)
-- Fluent / method-chaining API (`fetch().transform().display()`)
+- **`asyncio`** — `async`/`await`, `asyncio.gather`, `asyncio.run`, `asyncio.Queue`
+- **`httpx.AsyncClient`** for non-blocking HTTP
+- **`argparse`** for CLI argument parsing
 - `rich` library for terminal tree rendering
 - `python-dotenv` for environment variable management
 - `src` layout with editable install (`pip install -e .`)
