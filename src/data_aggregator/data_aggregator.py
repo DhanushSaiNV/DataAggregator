@@ -1,3 +1,4 @@
+import asyncio
 from typing import Self
 
 from data_aggregator.domain import *
@@ -126,27 +127,26 @@ class AsyncDataAggregator:
 
         self.pipeline = Pipeline(*pipeline_stages)
 
-    async def fetch(self) -> Self:
+    async def fetch(self, Source) -> Self:
         """Fetches data from provided DataSource classes. Parses them."""
         self.responses: list[ResponseModel] = []
 
-        for Source in self.sources:
-            if not issubclass(Source, DataSource | AsyncDataSource):
-                raise InvalidSourceError(
-                    f"Source `{Source.__name__}` is not a valid DataSource instance."
-                )
-
-            datasource_obj: DataSource = Source()
-
-            response: ResponseModel = await self.__fetch_parse_from_datasource(datasource_obj)
-
-            self.__update_pipeline_configs(
-                datasource_obj,
-                response,
-                Source,
+        if not issubclass(Source, AsyncDataSource):
+            raise InvalidSourceError(
+                f"Source `{Source.__name__}` is not a valid DataSource instance."
             )
 
-            self.responses.append(response)
+        datasource_obj: AsyncDataSource = Source()
+
+        response: ResponseModel = await self.__fetch_parse_from_datasource(datasource_obj)
+
+        self.__update_pipeline_configs(
+            datasource_obj,
+            response,
+            Source,
+        )
+
+        self.responses.append(response)
 
         return self
 
@@ -176,7 +176,10 @@ class AsyncDataAggregator:
             raise AggregatorError("ERROR: Data fetching failed.") from err
 
     async def run(self, display: bool = True):
-        await self.fetch()
+        fetch_tasts = [self.fetch(Source) for Source in self.sources]
+        
+        await asyncio.gather(*fetch_tasts, return_exceptions=True)
+
         transform(self.pipeline, self.pipeline_configs, self.pipeline_output_states)
         
         if display:
