@@ -21,3 +21,21 @@ class DataSource(ABC):
     @abstractmethod
     def parse(self, response_dict: dict | None = None) -> ResponseModel:
         pass
+
+class AsyncDataSource(ABC):
+    response_model: type[ResponseModel]
+    validated_model: type[ValidatedResponseModel]
+    
+    def __init__(
+        self
+    ) -> None:
+        pass
+
+    @abstractmethod
+    async def fetch(self, endpoint: str = "", *kwargs) -> Self | Any:
+        """Fetches the data and returns RawWeatherResponse"""
+        
+
+    @abstractmethod
+    def parse(self, response_dict: dict | None = None) -> ResponseModel:
+        pass

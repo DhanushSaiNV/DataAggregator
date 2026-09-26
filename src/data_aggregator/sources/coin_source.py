@@ -1,7 +1,7 @@
 import os
 from typing import Self
 
-from coingecko_sdk import Coingecko
+from coingecko_sdk import AsyncCoingecko, Coingecko
 from dotenv import load_dotenv
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 
@@ -10,7 +10,7 @@ from data_aggregator.domain.decorators import parser
 from data_aggregator.domain.exceptions import *
 from data_aggregator.shared.key_parser import parse_keys
 
-from .data_source import DataSource
+from .data_source import AsyncDataSource, DataSource
 
 load_dotenv(r"C:\Users\dhanu\Documents\codes\Career\PythonMastery\DataAggregator\.env")
 
@@ -20,12 +20,74 @@ if not API_KEY:
     raise APIKeyError("COINGECKO API KEY NOT FOUND.")
 
 __all__ = [
-    "CoinSource"
+    "AsyncCoinSource",
+    "CoinSource",
 ]
+
+
+
+class AsyncCoinSource(AsyncDataSource):
+    response_model = RawCoinResponse
+    validated_model = ValidatedCoinResponse
+
+    def __init__(self) -> None:
+        self.client = AsyncCoingecko(demo_api_key=API_KEY, environment="demo")
+
+    async def fetch(self, endpoint: str = "bitcoin", *kwargs) -> Self:
+        """Fetches the data and returns raw response Self"""
+        try:
+            response_coroutine = await self.client.coins.get_id(endpoint)
+
+        except (Timeout, ConnectionError, HTTPError, RequestException) as e:
+            raise DataFetchError(f"Fetching failed in {self.__class__}") from e
+        
+        response = response_coroutine.model_dump()
+
+        coin_response_dict = parse_keys(
+            response,
+            ["id", "symbol", "name", "categories"],
+        )
+
+        market_dict = parse_keys(
+            response,
+            [
+                "current_price",
+                "high_24h",
+                "low_24h",
+                "price_change_24h",
+                "price_change_percentage_24h",
+                "price_change_percentage_7d",
+                "price_change_percentage_30d",
+                "price_change_percentage_200d",
+                "price_change_percentage_1y",
+            ],
+        )
+
+        coin_response_dict["market_data"] = market_dict
+
+        self.response_dict = coin_response_dict
+
+        return self
+
+    
+    @parser
+    def parse(self, response_dict: dict | None = None) -> RawCoinResponse:
+        """parses raw response dict and resturn RawCoinResponseModel"""
+
+        response = RawCoinResponse.model_validate(
+            response_dict if response_dict is not None else self.response_dict
+        )
+
+        self.response = response
+
+        return response
+
+
 
 class CoinSource(DataSource):
     response_model = RawCoinResponse
     validated_model = ValidatedCoinResponse
+    async_version = AsyncCoinSource
 
     def __init__(self) -> None:
         self.client = Coingecko(demo_api_key=API_KEY, environment="demo")
@@ -75,3 +137,4 @@ class CoinSource(DataSource):
         self.response = response
 
         return response
+    
