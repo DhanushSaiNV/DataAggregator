@@ -102,5 +102,5 @@ class ValidationPipelineError(PipelineError):
 
         super().__init__(self.message, *args)
 
-class VisualEror(AggregatorError):
+class VisualError(AggregatorError):
     pass

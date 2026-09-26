@@ -15,7 +15,7 @@ class DataSource(ABC):
 
     @abstractmethod
     def fetch(self, endpoint: str = "", *kwargs) -> Self | Any:
-        """Fetches the data and returns RawWeatherResponse"""
+        """Fetches the data"""
         
 
     @abstractmethod

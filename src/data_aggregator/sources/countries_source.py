@@ -13,7 +13,7 @@ from data_aggregator.domain.exceptions import *
 
 from .data_source import AsyncDataSource, DataSource
 
-load_dotenv(r"C:\Users\dhanu\Documents\codes\Career\PythonMastery\DataAggregator\.env")
+load_dotenv()
 
 API_KEY = os.getenv("REST_COUNTRIES_API_KEY")
 
