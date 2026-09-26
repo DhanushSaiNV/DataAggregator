@@ -19,10 +19,57 @@ DEFAULT_PARAMS = {
 }
 
 
-class WeatherSource(DataSource):
+class AsyncWeatherSource(DataSource):
     response_model = RawWeatherResponse
     validated_model = ValidatedWeatherResponse
     
+    def __init__(
+        self
+    ) -> None:
+        self.openmeteo = openmeteo_requests.AsyncClient()
+
+    async def fetch(self, endpoint: str | None = None, *kwargs) -> Self:
+        """Fetches the data and returns raw response dict"""
+        response = await self.openmeteo.weather_api(BASE_URL, DEFAULT_PARAMS)
+
+        response = response[0]
+
+        current = response.Current()
+
+        if not current:
+            raise DataFetchError("OpenMeteo.Current() responded with None")
+
+        response_dict: dict = {
+            "coordinates": (response.Latitude(), response.Longitude()),
+            "timezone_b": response.Timezone(),
+            "time": current.Time(),
+            "temperature_2m": current.Variables(0).Value(),
+            "relative_humidity_2m": current.Variables(1).Value(),
+            "is_day": current.Variables(2).Value(),
+            "rain": current.Variables(3).Value(),
+        }
+
+        self.response_dict: dict = response_dict
+
+        return self
+
+    @parser
+    def parse(self, response_dict: dict | None = None) -> RawWeatherResponse:
+        """Parses raw response dict and returns RawWeatherResponse"""
+        response: RawWeatherResponse = RawWeatherResponse.model_validate(
+            response_dict if response_dict else self.response_dict
+        )
+
+        self.response = response
+        
+        return response
+
+
+class WeatherSource(DataSource):
+    response_model = RawWeatherResponse
+    validated_model = ValidatedWeatherResponse
+    async_version = AsyncWeatherSource
+
     def __init__(
         self
     ) -> None:

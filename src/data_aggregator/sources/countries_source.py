@@ -1,6 +1,8 @@
+import asyncio
 import os
 from typing import Self
 
+import httpx
 import requests
 from dotenv import load_dotenv
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
@@ -21,11 +23,75 @@ if not API_KEY:
 
 BASE_URL = "https://api.restcountries.com/countries/v5"
 
+__all__ = [
+    "AsyncCountriesSource",
+    "CountriesSource"
+]
+
+
+class AsyncCountriesSource(DataSource):
+    response_model = RawCountriesResponse
+    validated_model = ValidatedCountriesResponse
+    
+    def __init__(
+        self
+    ) -> None:
+        self.header = {"Authorization": f"Bearer {API_KEY}"}
+        
+
+    async def fetch(self, endpoint: str = "?q=indi&pretty=1", *kwargs) -> Self:
+        """Fetches the data and returns raw response Self"""
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(BASE_URL + endpoint, headers=self.header)
+                
+        except (Timeout, ConnectionError, HTTPError, RequestException) as e:
+            raise DataFetchError(f"Fetching failed in {self.__class__}") from e
+        
+        res_dict = response.json()
+        
+        countries = []
+
+        for country in res_dict["data"]["objects"]:
+            countries.append(
+                {
+                    "official_name": country["names"]["official"],
+                    "capitals": [
+                        capital["name"] for capital in country["capitals"]
+                    ],
+                    "region": country["region"],
+                    "subregion": country["subregion"],
+                    "currencies": [
+                        currency["name"] for currency in country["currencies"]
+                    ],
+                    "languages": [
+                        language["name"] for language in country["languages"]
+                    ],
+                }
+            )
+
+        self.response_dict = {"countries": countries, "count": len(countries)}
+
+        return self
+
+    
+    @parser
+    def parse(self, response_dict: dict | None = None) -> RawCountriesResponse:
+        """parses raw response dict and resturn RawCountriesResponseModel"""
+
+        response = RawCountriesResponse.model_validate(
+            response_dict if response_dict is not None else self.response_dict
+        )
+
+        self.response = response
+
+        return response
 
 class CountriesSource(DataSource):
     response_model = RawCountriesResponse
     validated_model = ValidatedCountriesResponse
-    
+    async_version = AsyncCountriesSource
+
     def __init__(
         self
     ) -> None:
